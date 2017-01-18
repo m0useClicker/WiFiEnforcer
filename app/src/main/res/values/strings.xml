@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">WiFiEnforcer</string>
+    <string name="target_wifi_network">m0use5G</string>
+</resources>
