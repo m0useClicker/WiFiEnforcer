@@ -33,14 +33,12 @@ public class WiFiStateChangeReceiver extends BroadcastReceiver {
             return;
         }
 
-        wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        context.registerReceiver(new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                connectToTargetNetworkIfAvailable(wifiManager.getScanResults());
-            }
-        }, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        wifiManager.startScan();
+        //connected outside of desired area where both networks available
+        if (!isConnectedToSecondaryNetwork()) {
+            return;
+        }
+
+        scanWiFiNetworks();
     }
 
     private boolean isWiFiEnabled() {
@@ -49,9 +47,17 @@ public class WiFiStateChangeReceiver extends BroadcastReceiver {
     }
 
     private boolean isConnectedToTargetNetwork() {
+        return isConnectedToNetwork(context.getString(R.string.target_wifi_network));
+    }
+
+    private boolean isConnectedToSecondaryNetwork() {
+        return isConnectedToNetwork(context.getString(R.string.secondary_wifi_network));
+    }
+
+    private boolean isConnectedToNetwork(String networkSsid) {
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        return wifiInfo.getSSID().equals(context.getString(R.string.target_wifi_network));
+        return wifiInfo.getSSID().equals(networkSsid);
     }
 
     private void connectToTargetNetworkIfAvailable(List<ScanResult> scans) {
@@ -59,6 +65,14 @@ public class WiFiStateChangeReceiver extends BroadcastReceiver {
             int targetNetworkId = getTargetNetworkId(wifiManager.getConfiguredNetworks());
             wifiManager.enableNetwork(targetNetworkId, true);
             wifiManager.reconnect();
+        } else {
+            //if connected to 2.4G network but 5G network not in range yet wait and repeat
+            try {
+                Thread.sleep(30 * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            scanWiFiNetworks();
         }
     }
 
@@ -79,5 +93,16 @@ public class WiFiStateChangeReceiver extends BroadcastReceiver {
             }
         }
         throw new RuntimeException("Network ID not found.");
+    }
+
+    private void scanWiFiNetworks() {
+        wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                connectToTargetNetworkIfAvailable(wifiManager.getScanResults());
+            }
+        }, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        wifiManager.startScan();
     }
 }
