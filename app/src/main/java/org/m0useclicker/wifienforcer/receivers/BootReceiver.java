@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import org.m0useclicker.wifienforcer.services.WiFiEnforcerService;
+import org.m0useclicker.wifienforcer.ReceiverRegistrator;
 
 /**
  * Boot receiver
@@ -12,8 +12,8 @@ import org.m0useclicker.wifienforcer.services.WiFiEnforcerService;
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
-            context.getApplicationContext().startService(new Intent(context, WiFiEnforcerService.class));
+        if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED) || intent.getAction().equals(Intent.ACTION_LOCKED_BOOT_COMPLETED)) {
+            ReceiverRegistrator.RegisterConnectionChangeReceiver(context);
         }
     }
 }
